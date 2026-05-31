@@ -134,7 +134,7 @@ async def stream_ollama(messages: list) -> AsyncGenerator[str, None]:
     Yields one string token at a time.
     """
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 
     payload = {
         "model": model,
@@ -177,7 +177,8 @@ async def chat(req: ChatRequest):
         # --- STEP 1: Retrieve relevant chunks from ChromaDB ---
         video_filter = detect_video_filter(question)
         try:
-            docs = retrieve_chunks(session_id, question, video_filter, k=5)
+            # Pass the preloaded singleton so HuggingFaceEmbeddings is never rebuilt per-request
+            docs = retrieve_chunks(session_id, question, video_filter, k=5, embedder=_embedder)
         except Exception as e:
             yield {"data": json.dumps({"type": "token", "content": f"[Retrieval error: {str(e)}]"})}
             yield {"data": json.dumps({"type": "done"})}
@@ -263,7 +264,7 @@ Rules:
 @app.get("/api/health")
 async def health():
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             r = await client.get(f"{ollama_url}/api/tags")
