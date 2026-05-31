@@ -180,29 +180,45 @@ h1, h2, h3, h4, h5, h6 {
 
 .video-meta {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
   margin-top: 1rem;
 }
 
 .meta-stat {
   background: rgba(0,0,0,0.2);
-  padding: 0.75rem;
+  padding: 0.6rem;
   border-radius: 8px;
   text-align: center;
 }
 
 .meta-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .meta-value {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--accent-primary);
+}
+
+.video-hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.hashtag-pill {
+  font-size: 0.7rem;
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
 }
 
 /* Chat Panel */

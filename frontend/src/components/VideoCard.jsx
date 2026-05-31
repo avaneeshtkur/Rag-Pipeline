@@ -1,7 +1,29 @@
 import React from 'react';
 
+function formatDuration(seconds) {
+  if (!seconds) return 'N/A';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  // yt-dlp returns YYYYMMDD
+  if (/^\d{8}$/.test(dateStr)) {
+    return `${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`;
+  }
+  return dateStr;
+}
+
 export default function VideoCard({ data, label }) {
   if (!data) return null;
+
+  const hashtags = Array.isArray(data.hashtags)
+    ? data.hashtags
+    : typeof data.hashtags === 'string' && data.hashtags
+      ? data.hashtags.split(',').map(t => t.trim()).filter(Boolean)
+      : [];
 
   return (
     <div className="video-card glass-panel">
@@ -9,6 +31,7 @@ export default function VideoCard({ data, label }) {
         <span className="video-title">{label} - {data.title}</span>
       </div>
       
+      {/* Display a simple iframe for YouTube, or link for Instagram */}
       {label === "Video A" ? (
         <iframe 
           width="100%" 
@@ -31,11 +54,11 @@ export default function VideoCard({ data, label }) {
       <div className="video-meta">
         <div className="meta-stat">
           <div className="meta-label">Creator</div>
-          <div className="meta-value">@{data.creator}</div>
+          <div className="meta-value" style={{fontSize: '1rem'}}>@{data.creator}</div>
         </div>
         <div className="meta-stat">
-          <div className="meta-label">Engagement</div>
-          <div className="meta-value">{(data.engagement_rate || 0).toFixed(2)}%</div>
+          <div className="meta-label">Followers</div>
+          <div className="meta-value">{(data.followers || 0).toLocaleString()}</div>
         </div>
         <div className="meta-stat">
           <div className="meta-label">Views</div>
@@ -45,7 +68,34 @@ export default function VideoCard({ data, label }) {
           <div className="meta-label">Likes</div>
           <div className="meta-value">{(data.likes || 0).toLocaleString()}</div>
         </div>
+        <div className="meta-stat">
+          <div className="meta-label">Comments</div>
+          <div className="meta-value">{(data.comments || 0).toLocaleString()}</div>
+        </div>
+        <div className="meta-stat">
+          <div className="meta-label">Engagement</div>
+          <div className="meta-value">{(data.engagement_rate || 0).toFixed(2)}%</div>
+        </div>
+        <div className="meta-stat">
+          <div className="meta-label">Duration</div>
+          <div className="meta-value">{formatDuration(data.duration)}</div>
+        </div>
+        <div className="meta-stat">
+          <div className="meta-label">Uploaded</div>
+          <div className="meta-value" style={{fontSize: '0.9rem'}}>{formatDate(data.upload_date)}</div>
+        </div>
       </div>
+
+      {hashtags.length > 0 && (
+        <div className="video-hashtags">
+          {hashtags.slice(0, 8).map((tag, i) => (
+            <span key={i} className="hashtag-pill">#{tag}</span>
+          ))}
+          {hashtags.length > 8 && (
+            <span className="hashtag-pill" style={{opacity: 0.6}}>+{hashtags.length - 8} more</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
