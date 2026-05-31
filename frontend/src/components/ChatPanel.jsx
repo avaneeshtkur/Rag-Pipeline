@@ -9,23 +9,30 @@ export default function ChatPanel({ sessionId, videoA, videoB }) {
   const { sendMessage } = useChatSSE();
   const messagesEndRef = useRef(null);
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // BUG: Mutating messages state directly so React won't re-render
+  // BUG 1 FIX (Cause D): Functional state update creating new objects so React re-renders
   const onToken = (token) => {
-    if (messages.length > 0) {
-      messages[messages.length - 1].content += token;
-      setMessages(messages);
-    }
+    setMessages(prev => {
+      const updated = [...prev];
+      const last = { ...updated[updated.length - 1] };
+      last.content = (last.content || '') + token;
+      updated[updated.length - 1] = last;
+      return updated;
+    });
   };
 
   const onSources = (sources) => {
-    if (messages.length > 0) {
-      messages[messages.length - 1].sources = sources;
-      setMessages(messages);
-    }
+    setMessages(prev => {
+      const updated = [...prev];
+      const last = { ...updated[updated.length - 1] };
+      last.sources = sources;
+      updated[updated.length - 1] = last;
+      return updated;
+    });
   };
 
   const onDone = () => {
@@ -33,10 +40,13 @@ export default function ChatPanel({ sessionId, videoA, videoB }) {
   };
 
   const onError = (error) => {
-    if (messages.length > 0) {
-      messages[messages.length - 1].content += `\n[Error: ${error}]`;
-      setMessages(messages);
-    }
+    setMessages(prev => {
+      const updated = [...prev];
+      const last = { ...updated[updated.length - 1] };
+      last.content = (last.content || '') + `\n[Error: ${error}]`;
+      updated[updated.length - 1] = last;
+      return updated;
+    });
     setIsStreaming(false);
   };
 
@@ -48,21 +58,48 @@ export default function ChatPanel({ sessionId, videoA, videoB }) {
     const userMsg = { role: 'user', content: trimmed, id: Date.now() };
     const assistantMsg = { role: 'assistant', content: '', sources: [], id: Date.now() + 1, streaming: true };
 
+    // Add user + empty assistant in ONE state update — never add assistant again after this
     setMessages(prev => [...prev, userMsg, assistantMsg]);
     setInput('');
     setIsStreaming(true);
-
-    // BUG: Pushing placeholder assistant twice, creating duplicates
-    setMessages(prev => [...prev, { role: 'assistant', content: '', sources: [], streaming: true }]);
 
     await sendMessage(
         trimmed,
         sessionId,
         videoA,
         videoB,
-        onToken,
-        onSources,
-        onDone,
+        // onToken: append to the LAST message only — no new message is added
+        (token) => {
+            setMessages(prev => {
+                const copy = [...prev];
+                const last = { ...copy[copy.length - 1] };
+                last.content = (last.content || '') + token;
+                copy[copy.length - 1] = last;
+                return copy;
+            });
+        },
+        // onSources: attach to the LAST message only
+        (sources) => {
+            setMessages(prev => {
+                const copy = [...prev];
+                const last = { ...copy[copy.length - 1] };
+                last.sources = sources;
+                last.streaming = false;
+                copy[copy.length - 1] = last;
+                return copy;
+            });
+        },
+        // onDone: mark last message as no longer streaming
+        () => {
+            setMessages(prev => {
+                const copy = [...prev];
+                const last = { ...copy[copy.length - 1] };
+                last.streaming = false;
+                copy[copy.length - 1] = last;
+                return copy;
+            });
+            setIsStreaming(false);
+        },
         onError
     );
   };
