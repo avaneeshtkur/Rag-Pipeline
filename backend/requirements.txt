@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+langchain
+langgraph
+langchain-community
+langchain-ollama
+chromadb
+youtube-transcript-api==0.4.4
+yt-dlp
+instaloader
+openai-whisper
+tiktoken
+sse-starlette
+pydantic
+sentence-transformers
+httpx
