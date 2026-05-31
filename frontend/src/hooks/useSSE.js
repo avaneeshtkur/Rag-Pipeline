@@ -2,7 +2,7 @@ export function useChatSSE() {
   const sendMessage = async (question, sessionId, videoA, videoB, onToken, onSources, onDone, onError) => {
     let response;
     try {
-        response = await fetch('http://localhost:8000/api/chat', {
+        response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

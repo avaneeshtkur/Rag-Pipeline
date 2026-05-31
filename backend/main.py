@@ -142,7 +142,7 @@ async def stream_ollama(messages: list) -> AsyncGenerator[str, None]:
         "stream": True,
         "options": {
             "temperature": 0.3,
-            "num_predict": 1024
+            "num_predict": 512
         }
     }
 
@@ -226,7 +226,7 @@ Rules:
         history = conversation_store[session_id]  # previous turns
         messages = (
             [{"role": "system", "content": system_prompt}]
-            + history[-6:]  # last 3 turns (6 messages)
+            + history[-4:]  # last 2 turns (4 messages) — keeps context tight for the 1B model
             + [{"role": "user", "content": f"Transcript context:\n{context_text}\n\nQuestion: {question}"}]
         )
 
