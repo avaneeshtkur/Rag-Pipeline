@@ -47,7 +47,7 @@ function App() {
       )}
 
       <header className="header">
-        <h1>RAG Video Analyzer</h1>
+        <h1>ViralLens</h1>
         <p>Compare engagement strategies of YouTube and Instagram Reels</p>
       </header>
 
