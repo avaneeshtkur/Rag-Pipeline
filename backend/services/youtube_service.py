@@ -3,11 +3,11 @@ import os
 import uuid
 from youtube_transcript_api import YouTubeTranscriptApi
 import yt_dlp
-import whisper
+from faster_whisper import WhisperModel
 from dotenv import load_dotenv
 
 load_dotenv()
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "tiny")
 
 def get_video_id(url: str) -> str:
     """Extracts the YouTube video ID from a URL."""
@@ -29,9 +29,9 @@ def _whisper_fallback(video_id: str) -> str:
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-        model = whisper.load_model(WHISPER_MODEL)
-        result = model.transcribe(audio_path)
-        return result.get("text", "").strip()
+        model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(audio_path)
+        return " ".join([seg.text for seg in segments]).strip()
     except Exception as e:
         print(f"Warning: Whisper fallback failed for {video_id}: {e}")
         return ""

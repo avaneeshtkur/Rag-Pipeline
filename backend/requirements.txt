@@ -9,7 +9,7 @@ chromadb
 youtube-transcript-api==0.4.4
 yt-dlp
 instaloader
-openai-whisper
+faster-whisper
 tiktoken
 sse-starlette
 pydantic

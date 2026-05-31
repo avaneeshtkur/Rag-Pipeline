@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()  # Load .env before any other imports that need API keys
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -23,7 +24,35 @@ from services.embedder import get_embedder
 from services.vector_store import ingest_chunks
 from graph.graph import GRAPH_APP
 
-app = FastAPI(title="RAG Video Analyzer")
+# ── Preloaded singletons (set during lifespan startup) ──────────────────────
+_embedder = None
+_whisper_model = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Preload heavy models once at startup so requests pay no cold-start cost."""
+    global _embedder, _whisper_model
+    loop = asyncio.get_event_loop()
+
+    whisper_model_name = os.getenv("WHISPER_MODEL", "tiny")
+
+    print(f"[startup] Loading embedding model…")
+    _embedder = await loop.run_in_executor(None, get_embedder)
+    print(f"[startup] Embedding model ready.")
+
+    print(f"[startup] Loading Whisper '{whisper_model_name}' model…")
+    from faster_whisper import WhisperModel as _WM
+    _whisper_model = await loop.run_in_executor(
+        None,
+        lambda: _WM(whisper_model_name, device="cpu", compute_type="int8")
+    )
+    print(f"[startup] Whisper model ready.")
+
+    yield  # ← app runs here
+
+    print("[shutdown] Cleanup complete.")
+
+app = FastAPI(title="RAG Video Analyzer", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,9 +76,13 @@ class ChatRequest(BaseModel):
 @app.post("/api/ingest")
 async def ingest_videos(req: IngestRequest):
     session_id = str(uuid.uuid4())
-    
-    video_a_data = fetch_youtube_data(req.youtube_url)
-    video_b_data = fetch_instagram_data(req.instagram_url)
+    loop = asyncio.get_event_loop()
+
+    # ── Fetch both videos in parallel ───────────────────────────────────────
+    video_a_data, video_b_data = await asyncio.gather(
+        loop.run_in_executor(None, fetch_youtube_data, req.youtube_url),
+        loop.run_in_executor(None, fetch_instagram_data, req.instagram_url),
+    )
     
     video_a_data["engagement_rate"] = compute_engagement_rate(
         video_a_data["likes"], video_a_data["comments"], video_a_data["views"]
@@ -61,9 +94,10 @@ async def ingest_videos(req: IngestRequest):
     chunks_a = chunk_transcript(video_a_data["transcript"], "A", video_a_data)
     chunks_b = chunk_transcript(video_b_data["transcript"], "B", video_b_data)
     
-    embedder = get_embedder()
+    # Use the preloaded embedder singleton (falls back to get_embedder() on cold start)
+    embedder = _embedder if _embedder is not None else get_embedder()
     all_chunks = chunks_a + chunks_b
-    ingest_chunks(all_chunks, embedder, session_id)
+    await loop.run_in_executor(None, ingest_chunks, all_chunks, embedder, session_id)
     
     return {
         "session_id": session_id,

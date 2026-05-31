@@ -1,12 +1,12 @@
 import yt_dlp
-import whisper
+from faster_whisper import WhisperModel
 import os
 import instaloader
 import uuid
 from dotenv import load_dotenv
 
 load_dotenv()
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "tiny")
 
 def get_reel_metadata(url: str) -> dict:
     """Extracts metadata from an Instagram reel using yt-dlp."""
@@ -32,15 +32,16 @@ def transcribe_audio(url: str) -> str:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
             
-        # Transcribe with Whisper
-        model = whisper.load_model(WHISPER_MODEL)
-        result = model.transcribe(audio_path)
-        
+        # Transcribe with faster-whisper (int8, CPU-optimised)
+        model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8")
+        segments, _ = model.transcribe(audio_path)
+        transcript = " ".join([seg.text for seg in segments]).strip()
+
         # Cleanup
         if os.path.exists(audio_path):
             os.remove(audio_path)
-            
-        return result.get("text", "").strip()
+
+        return transcript
     except Exception as e:
         if os.path.exists(audio_path):
             os.remove(audio_path)
