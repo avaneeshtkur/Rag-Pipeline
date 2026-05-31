@@ -226,3 +226,29 @@ Rules:
 
     return EventSourceResponse(generate())
 
+@app.get("/api/health")
+async def health():
+    ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            r = await client.get(f"{ollama_url}/api/tags")
+            ollama_ok = r.status_code == 200
+            # Check if the required model is actually pulled
+            models = [m["name"] for m in r.json().get("models", [])]
+            model_ready = any(model in m for m in models)
+    except Exception:
+        ollama_ok = False
+        model_ready = False
+
+    return {
+        "status": "ok" if (ollama_ok and model_ready) else "degraded",
+        "ollama_running": ollama_ok,
+        "model_ready": model_ready,
+        "model": model,
+        "message": (
+            "All systems ready." if (ollama_ok and model_ready)
+            else f"Ollama running but model '{model}' not found. Run: ollama pull {model}" if ollama_ok
+            else "Ollama not running. Start it with: ollama serve"
+        )
+    }
