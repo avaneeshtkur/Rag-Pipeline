@@ -144,6 +144,7 @@ At 800, retrieval was pulling in too much surrounding content that wasn't releva
 ---
 
 ## Folder Structure
+```
 rag-video-analyzer/
 ├── backend/
 │   ├── main.py                   # Routes, SSE streaming, conversation memory
@@ -160,15 +161,16 @@ rag-video-analyzer/
 │   └── utils/
 │       └── engagement.py
 └── frontend/
-└── src/
-├── components/
-│   ├── VideoCard.jsx
-│   ├── ChatPanel.jsx
-│   ├── ChatMessage.jsx    # Renders streaming text + citation pills
-│   └── InputBar.jsx
-└── hooks/
-├── useSSE.js          # Buffered SSE reader, handles split chunks
-└── useChat.js
+    └── src/
+        ├── components/
+        │   ├── VideoCard.jsx
+        │   ├── ChatPanel.jsx
+        │   ├── ChatMessage.jsx    # Renders streaming text + citation pills
+        │   └── InputBar.jsx
+        └── hooks/
+            ├── useSSE.js          # Buffered SSE reader, handles split chunks
+            └── useChat.js
+```
 
 
 ---
