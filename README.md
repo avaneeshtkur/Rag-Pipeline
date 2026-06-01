@@ -193,4 +193,4 @@ The retrieval pipeline and chunking strategy, yes. I'd replace the in-memory con
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](LICENSE).
