@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Instagram session cookies — never commit these
+backend/instagram_cookies.txt
+instagram_cookies.txt
